@@ -17,12 +17,15 @@
         "nodemon": "^3.1.4"
     },
     "dependencies": {
+        "async-hook": "^1.0.0",
         "bcrypt": "^5.1.1",
         "cookie-parser": "^1.4.7",
         "cors": "^2.8.5",
         "cryptr": "^6.3.0",
         "express": "^5.1.0",
         "mongodb": "^6.16.0",
+        "path": "^0.12.7",
+        "react-async-hook": "^4.0.0",
         "socket.io": "^4.8.3"
     }
 }

@@ -32,6 +32,7 @@ async function getById(toyId) {
 	try {
 		const collection = await dbService.getCollection('toy')
 		const toy = await collection.findOne({ _id: ObjectId.createFromHexString(toyId) })
+		// add aggregation to get the relevant reviews (of toyId)
 		toy.createdAt = toy._id.getTimestamp()
 		return toy
 	} catch (err) {

@@ -41,6 +41,10 @@ import { authRoutes } from './api/auth/auth.routes.js'
 import { userRoutes } from './api/user/user.routes.js'
 import { toyRoutes } from './api/toy/toy.routes.js'
 import { reviewRoutes } from './api/review/review.routes.js'
+import { setupAsyncLocalStorage } from './middlewares/setupAls.middleware.js'
+
+// app.all('*', setupAsyncLocalStorage)
+app.use(setupAsyncLocalStorage)
 
 // routes
 app.use('/api/auth', authRoutes)
@@ -52,9 +56,14 @@ app.use('/api/review', reviewRoutes)
 // So when requesting http://localhost:3030/index.html/toy/123 it will still respond with
 // our SPA (single page app) (the index.html file) and allow vue-router to take it from there
 
-app.get('/*all', (req, res) => {
-    res.sendFile(path.resolve('public/index.html'))
+// app.get('/*all', (req, res) => {
+//     res.sendFile(path.resolve('public/index.html'))
+// })
+
+app.use((req, res) => {
+  res.sendFile(path.resolve(__dirname, 'public/index.html'))
 })
+
 
 const port = process.env.PORT || 3030
 
