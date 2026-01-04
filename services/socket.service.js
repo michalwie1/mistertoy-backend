@@ -1,9 +1,8 @@
 import {logger} from './logger.service.js'
 import {Server} from 'socket.io'
-
+import {toyService} from '../api/toy/toy.service.js'
 
 var gIo = null
-
 
 export function setupSocketAPI(http) {
     gIo = new Server(http, {
@@ -11,11 +10,24 @@ export function setupSocketAPI(http) {
             origin: '*',
         }
     })
+
     gIo.on('connection', socket => {
         logger.info(`New connected socket [id: ${socket.id}]`)
+
         socket.on('disconnect', socket => {
             logger.info(`Socket disconnected [id: ${socket.id}]`)
         })
+
+        socket.on('set-user-socket', userId => {
+            logger.info(`Setting socket.userId = ${userId} for socket [id: ${socket.id}]`)
+            socket.userId = userId
+        })
+
+        socket.on('unset-user-socket', () => {
+            logger.info(`Removing socket.userId for socket [id: ${socket.id}]`)
+            delete socket.userId
+        })
+
         socket.on('chat-set-topic', topic => {
             if (socket.myTopic === topic) return
             if (socket.myTopic) {
@@ -25,41 +37,38 @@ export function setupSocketAPI(http) {
             socket.join(topic)
             socket.myTopic = topic
         })
-        socket.on('chat-send-msg', msg => {
+
+        socket.emit('chat-history', history => {
+            history.forEach(_appendMsg)
+    })
+
+
+        socket.on('chat-send-msg', async msg => {
             logger.info(`New chat msg from socket [id: ${socket.id}], emitting to topic ${socket.myTopic}`)
+            await toyService.addToyMsg(socket.myTopic, msg)
+
             // emits to all sockets:
             // gIo.emit('chat addMsg', msg)
+
             // emits only to sockets in the same room
             gIo.to(socket.myTopic).emit('chat-add-msg', msg)
         })
+
         socket.on('user-watch', userId => {
             logger.info(`user-watch from socket [id: ${socket.id}], on user ${userId}`)
             socket.join('watching:' + userId)
         })
-        socket.on('set-user-socket', userId => {
-            logger.info(`Setting socket.userId = ${userId} for socket [id: ${socket.id}]`)
-            socket.userId = userId
-        })
-        socket.on('unset-user-socket', () => {
-            logger.info(`Removing socket.userId for socket [id: ${socket.id}]`)
-            delete socket.userId
-        })
-
-
     })
 }
-
 
 function emitTo({ type, data, label }) {
     if (label) gIo.to('watching:' + label.toString()).emit(type, data)
     else gIo.emit(type, data)
 }
 
-
 async function emitToUser({ type, data, userId }) {
     userId = userId.toString()
     const socket = await _getUserSocket(userId)
-
 
     if (socket) {
         logger.info(`Emiting event: ${type} to user: ${userId} socket [id: ${socket.id}]`)
@@ -70,7 +79,6 @@ async function emitToUser({ type, data, userId }) {
     }
 }
 
-
 // If possible, send to all sockets BUT not the current socket 
 // Optionally, broadcast to a room / to all
 async function broadcast({ type, data, room = null, userId }) {
@@ -78,6 +86,7 @@ async function broadcast({ type, data, room = null, userId }) {
     
     logger.info(`Broadcasting event: ${type}`)
     const excludedSocket = await _getUserSocket(userId)
+    
     if (room && excludedSocket) {
         logger.info(`Broadcast to room ${room} excluding user: ${userId}`)
         excludedSocket.broadcast.to(room).emit(type, data)
@@ -93,7 +102,6 @@ async function broadcast({ type, data, room = null, userId }) {
     }
 }
 
-
 async function _getUserSocket(userId) {
     const sockets = await _getAllSockets()
     const socket = sockets.find(s => s.userId === userId)
@@ -105,7 +113,6 @@ async function _getAllSockets() {
     return sockets
 }
 
-
 async function _printSockets() {
     const sockets = await _getAllSockets()
     console.log(`Sockets: (count: ${sockets.length}):`)
@@ -114,7 +121,6 @@ async function _printSockets() {
 function _printSocket(socket) {
     console.log(`Socket - socketId: ${socket.id} userId: ${socket.userId}`)
 }
-
 
 export const socketService = {
     // set up the sockets service and define the API
@@ -126,4 +132,18 @@ export const socketService = {
     // Send to all sockets BUT not the current socket - if found
     // (otherwise broadcast to a room / to all)
     broadcast,
+}
+
+function _appendMsg(msg) {
+    console.log('hi')
+    if (msg.by === sessionStorage.nickname) msg.by = 'Me'
+
+    // Add the incoming msg to the chat
+
+    const elChat = document.querySelector('.chat')
+    console.log(elChat)
+    elChat.innerHTML += `<li><span>${msg.by}:</span> ${msg.txt}</li>`
+
+    window.scrollTo(0, document.body.scrollHeight)
+    console.log(msg)
 }

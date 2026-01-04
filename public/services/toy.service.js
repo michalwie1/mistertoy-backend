@@ -57,18 +57,19 @@ async function save(toy) {
 }
 
 async function addToyMsg(toyId, txt) {
-    // const toy = await getById(toyId)
-    // if (!toy.msgs) toy.msgs = []
+    const toy = await getById(toyId)
+    if (!toy.msgs) toy.msgs = []
 
-    // const msg = {
-    //     id: utilService.makeId(),
-    //     by: userService.getLoggedinUser(),
-    //     txt
-    // }
-    // toy.msgs.push(msg)
-    // await storageService.put(STORAGE_KEY, toy)    
-    const savedMsg = await httpService.post(`toy/${toyId}/msg`, {txt})
-    return savedMsg
+    const msg = {
+        id: utilService.makeId(),
+        by: userService.getLoggedinUser(),
+        txt
+    }
+    toy.msgs.push(msg)
+    await storageService.put(STORAGE_KEY, toy) 
+
+    // const savedMsg = await httpService.post(`toy/${toyId}/msg`, {txt})
+    // return savedMsg
 }
 
 

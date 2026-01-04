@@ -77,6 +77,7 @@ export async function addToyMsg(req, res) {
             by: loggedinUser,
             createdAt: Date.now(),
         }
+
         const savedMsg = await toyService.addToyMsg(toyId, msg)
         res.json(savedMsg)
     } catch (err) {
@@ -86,6 +87,7 @@ export async function addToyMsg(req, res) {
 }
 
 export async function removeToyMsg(req, res) {
+    console.log('check', req.params)
     try {
         const { toyId, msgId } = req.params
 

@@ -2,7 +2,15 @@ import express  from 'express'
 import cookieParser from 'cookie-parser'
 import cors  from 'cors'
 import path, { dirname } from 'path'
+import http from 'http'
 import { fileURLToPath } from 'url'
+import { authRoutes } from './api/auth/auth.routes.js'
+import { userRoutes } from './api/user/user.routes.js'
+import { toyRoutes } from './api/toy/toy.routes.js'
+import { reviewRoutes } from './api/review/review.routes.js'
+import { setupAsyncLocalStorage } from './middlewares/setupAls.middleware.js'
+import { Server } from 'socket.io'
+import { setupSocketAPI } from './services/socket.service.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -11,6 +19,7 @@ import { logger } from './services/logger.service.js'
 logger.info('server.js loaded...')
 
 const app = express()
+const server = http.createServer(app)
 
 // Express App Config
 app.use(cookieParser())
@@ -37,11 +46,7 @@ if (process.env.NODE_ENV === 'production') {
     app.use(cors(corsOptions))
 }
 
-import { authRoutes } from './api/auth/auth.routes.js'
-import { userRoutes } from './api/user/user.routes.js'
-import { toyRoutes } from './api/toy/toy.routes.js'
-import { reviewRoutes } from './api/review/review.routes.js'
-import { setupAsyncLocalStorage } from './middlewares/setupAls.middleware.js'
+setupSocketAPI(server)
 
 // app.all('*', setupAsyncLocalStorage)
 app.use(setupAsyncLocalStorage)
@@ -51,6 +56,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/user', userRoutes)
 app.use('/api/toy', toyRoutes)
 app.use('/api/review', reviewRoutes)
+
 
 // Make every unmatched server-side-route fall back to index.html
 // So when requesting http://localhost:3030/index.html/toy/123 it will still respond with
@@ -64,9 +70,12 @@ app.use((req, res) => {
   res.sendFile(path.resolve(__dirname, 'public/index.html'))
 })
 
-
 const port = process.env.PORT || 3030
 
-app.listen(port, () => {
-    logger.info('Server is running on port: ' + port)
+// app.listen(port, () => {
+//     logger.info('Server is running on port: ' + port)
+// })
+
+server.listen(port, () => {
+	console.log(`server running at http://localhost:${port}`)
 })
